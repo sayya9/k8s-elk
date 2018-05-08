@@ -1,0 +1,54 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  namespace: {{ .Release.Namespace }}
+  name: {{ .Chart.Name }}-es-coordinator-{{ .Release.Name }}
+  labels:
+{{ include "labels" . | indent 4 }}      
+spec:
+  replicas: {{ .Values.es.replicaCount.coordinator }}
+  template:
+    metadata:
+      labels:
+{{ include "labels.esCoordinator" . | indent 8 }}
+    spec:
+      initContainers:
+      # see https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html
+      # and https://www.elastic.co/guide/en/elasticsearch/reference/current/setup-configuration-memory.html#mlockall
+      - name: "sysctl"
+        image: "busybox"
+        imagePullPolicy: "Always"
+        command: ["sysctl", "-w", "vm.max_map_count=262144"]
+        securityContext:
+          privileged: true
+      containers:
+      - name: es-coordinator
+        image: {{ .Values.es.image.repository }}:{{ .Values.es.image.tag }}
+        imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+        ports:
+        - name: transport
+          containerPort: {{ .Values.es.service.coordinator.internalTransportPort }}
+        - name: http
+          containerPort: {{ .Values.es.service.coordinator.internalApiPort }}
+        env:
+        - name: NODE_DATA
+          value: "false"
+        - name: NODE_INGEST
+          value: "false"
+        - name: NODE_MASTER
+          value: "false"
+        - name: ES_JAVA_OPTS
+          value: "-Xms{{ .Values.es.heapSize.coordinator }} -Xmx{{ .Values.es.heapSize.coordinator }}"
+        volumeMounts:
+        - name: tz-conf
+          mountPath: /etc/localtime
+        - name: config
+          mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+          subPath: elasticsearch.yml
+      volumes:
+      - name: tz-conf
+        hostPath:
+          path: /etc/localtime
+      - name: config
+        configMap:
+          name: {{ template "es.fullname" . }}

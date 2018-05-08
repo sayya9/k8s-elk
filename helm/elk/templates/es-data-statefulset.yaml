@@ -1,0 +1,73 @@
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  namespace: {{ .Release.Namespace }}
+  name: {{ .Chart.Name }}-es-data-{{ .Release.Name }}
+  labels:
+{{ include "labels" . | indent 4 }}      
+spec:
+  serviceName: {{ .Chart.Name }}-es-data
+  replicas: {{ .Values.es.replicaCount.data }}
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ {{ .Values.es.volumes.data.accessModes | quote }} ]
+      resources:
+        requests:
+          storage: {{ .Values.es.volumes.data.size }}
+      storageClassName: {{ .Values.global.storageClassName }}
+  template:
+    metadata:
+      labels:
+{{ include "labels.esData" . | indent 8 }}
+    spec:
+      initContainers:
+      # see https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html
+      # and https://www.elastic.co/guide/en/elasticsearch/reference/current/setup-configuration-memory.html#mlockall
+      - name: "sysctl"
+        image: "busybox"
+        imagePullPolicy: "Always"
+        command: ["sysctl", "-w", "vm.max_map_count=262144"]
+        securityContext:
+          privileged: true
+      - name: chown
+        image: {{ .Values.es.image.repository }}:{{ .Values.es.image.tag }}
+        imagePullPolicy: {{ .Values.global.image.pullPolicy | quote }}
+        command:
+        - bash
+        - -c
+        - chown elasticsearch:elasticsearch /usr/share/elasticsearch/data &&
+          chown elasticsearch:elasticsearch /usr/share/elasticsearch/logs
+        volumeMounts:
+        - mountPath: /usr/share/elasticsearch/data
+          name: data
+      containers:
+      - name: es-data
+        image: {{ .Values.es.image.repository }}:{{ .Values.es.image.tag }}
+        imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+        ports:
+        - name: transport
+          containerPort: {{ .Values.es.service.data.internalTransportPort }}
+        env:
+        - name: NODE_MASTER
+          value: "false"
+        - name: HTTP_ENABLE
+          value: "false"
+        - name: ES_JAVA_OPTS
+          value: "-Xms{{ .Values.es.heapSize.data }} -Xmx{{ .Values.es.heapSize.data }}"
+        volumeMounts:
+        - name: tz-conf
+          mountPath: /etc/localtime
+        - name: data
+          mountPath: {{ .Values.es.volumes.data.mountPath }}
+        - name: config
+          mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+          subPath: elasticsearch.yml
+      volumes:
+      - name: tz-conf
+        hostPath:
+          path: /etc/localtime
+      - name: config
+        configMap:
+          name: {{ template "es.fullname" . }}

@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: {{ .Release.Namespace }}
+  name: {{ .Values.es.service.coordinator.name }}
+  labels:
+{{ include "labels" . | indent 4 }}
+spec:
+  type: {{ .Values.es.service.coordinator.type }}
+  ports:
+  - port: {{ .Values.es.service.coordinator.externalApiPort }}
+    targetPort: http
+    protocol: TCP
+    name: http
+  - port: {{ .Values.es.service.coordinator.externalTransportPort }}
+    targetPort: transport
+    protocol: TCP
+    name: transport
+  selector:
+{{ include "labels.esCoordinator" . | indent 4 }}    
