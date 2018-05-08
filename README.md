@@ -102,7 +102,7 @@ discovery.zen.ping.unicast.hosts: ["es-discovery"]
 透過es提供的API確認基本訊息：
 
 ```
-GET http://localhost:9200
+GET /
 ```
 
 返回：
@@ -128,7 +128,7 @@ GET http://localhost:9200
 集群健康值：
 
 ```
-GET http://localhost:9200/_cluster/health?pretty
+GET _cluster/health?pretty
 ```
 
 返回：
@@ -156,7 +156,7 @@ GET http://localhost:9200/_cluster/health?pretty
 各個node訊息：
 
 ```
-GET http://localhost:9200/_cat/nodes?v
+GET _cat/nodes?v
 ```
 
 返回：
