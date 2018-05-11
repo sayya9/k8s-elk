@@ -2,7 +2,7 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   namespace: {{ .Release.Namespace }}
-  name: {{ .Chart.Name }}-es-master-{{ .Release.Name }}
+  name: {{ template "es.master.fullname" . }}
   labels:
 {{ include "labels" . | indent 4 }}      
 spec:

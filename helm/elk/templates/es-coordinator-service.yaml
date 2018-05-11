@@ -6,7 +6,8 @@ metadata:
   labels:
 {{ include "labels" . | indent 4 }}
 spec:
-  type: {{ .Values.es.service.coordinator.type }}
+  #type: {{ .Values.es.service.coordinator.type }}
+  type: NodePort
   ports:
   - port: {{ .Values.es.service.coordinator.externalApiPort }}
     targetPort: http

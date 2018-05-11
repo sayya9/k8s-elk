@@ -12,7 +12,12 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 */}}
 {{- define "es.fullname" -}}
 {{- $name := default .Chart.Name .Values.nameOverride -}}
-{{- printf "%s-es-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- printf "%s-%s-es" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{- define "filebeat.fullname" -}}
+{{- $name := default .Chart.Name .Values.nameOverride -}}
+{{- printf "%s-%s-filebeat" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*
@@ -65,4 +70,10 @@ component: es-data
 release: {{ .Release.Name }}
 app: {{ template "es.fullname" . }}
 component: es-coordinator
+{{- end -}}
+
+{{- define "labels.filebeat" -}}
+release: {{ .Release.Name }}
+app: {{ template "filebeat.fullname" . }}
+component: shipper
 {{- end -}}

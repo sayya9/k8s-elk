@@ -2,7 +2,7 @@ apiVersion: apps/v1beta1
 kind: StatefulSet
 metadata:
   namespace: {{ .Release.Namespace }}
-  name: {{ .Chart.Name }}-es-data-{{ .Release.Name }}
+  name: {{ template "es.data.fullname" . }}
   labels:
 {{ include "labels" . | indent 4 }}      
 spec:
