@@ -1,0 +1,47 @@
+{{- if .Values.logstash.enabled }}
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  namespace: {{ .Release.Namespace }}
+  name: {{ template "logstash.fullname" . }}
+  labels:
+{{ include "labels" . | indent 4 }}      
+spec:
+  replicas: {{ .Values.logstash.replicaCount }}
+  template:
+    metadata:
+      labels:
+{{ include "labels.logstash" . | indent 8 }}
+    spec:
+      containers:
+      - name: logstash
+        image: {{ .Values.logstash.image.repository }}:{{ .Values.logstash.image.tag }}
+        imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+        ports:
+        - name: logstash
+          containerPort: {{ .Values.logstash.service.internalPort }}
+        env:
+        - name: ELASTICSEARCH_HOST
+          value: {{ .Values.es.service.coordinator.name }}
+        - name: ELASTICSEARCH_PORT
+          value: "{{ .Values.es.service.coordinator.externalApiPort }}"
+        volumeMounts:
+        - name: tz-conf
+          mountPath: /etc/localtime
+        - name: config
+          mountPath: /usr/share/logstash/config/logstash.yml
+          subPath: logstash.yml
+        - name: pipelines
+          mountPath: /usr/share/logstash/pipeline/logstash.conf
+          subPath: logstash.conf
+      volumes:
+      - name: tz-conf
+        hostPath:
+          path: /etc/localtime
+      - name: config
+        configMap:
+          name: {{ template "logstash.fullname" . }}
+      - name: pipelines
+        configMap:
+          name: {{ template "logstash.fullname" . }}
+{{- end }}

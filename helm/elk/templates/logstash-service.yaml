@@ -1,0 +1,18 @@
+{{- if .Values.logstash.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: {{ .Release.Namespace }}
+  name: {{ .Values.logstash.service.name }}
+  labels:
+{{ include "labels" . | indent 4 }}
+spec:
+  type: {{ .Values.logstash.service.type }}
+  ports:
+  - port: {{ .Values.logstash.service.externalPort }}
+    targetPort: logstash
+    protocol: TCP
+    name: logstash
+  selector:
+{{ include "labels.logstash" . | indent 4 }}    
+{{- end }}

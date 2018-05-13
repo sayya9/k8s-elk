@@ -1,0 +1,28 @@
+{{- if .Values.logstash.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: {{ .Release.Namespace }}
+  name: {{ template "logstash.fullname" . }}
+  labels:
+{{ include "labels" . | indent 4 }}
+data:
+  logstash.yml: |-
+    http.host: "0.0.0.0"
+    # Disable X-Pack
+    # See: https://www.elastic.co/guide/en/x-pack/6.2/xpack-settings.html
+    xpack.monitoring.enabled: false
+  logstash.conf: |-
+    # all input will come from filebeat, no local logs
+    input {
+      beats {
+        port => {{ .Values.logstash.service.externalPort }}
+      }
+    }
+
+    output {
+        elasticsearch {
+            hosts => ['${ELASTICSEARCH_HOST:elasticsearch}:${ELASTICSEARCH_PORT:9200}']
+        }
+    }
+{{- end }}

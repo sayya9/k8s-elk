@@ -8,6 +8,9 @@ metadata:
 data:
   filebeat.yml: |-
     filebeat.config:
+      # Filebeat can load external configuration files for prospectors and modules,
+      # which allows you to separate your configuration into multiple smaller configuration files.
+      # See: https://www.elastic.co/guide/en/beats/filebeat/6.2/filebeat-configuration-reloading.html#load-prospector-config
       prospectors:
         # Mounted `filebeat-prospectors` configmap:
         path: ${path.config}/prospectors.d/*.yml
@@ -18,16 +21,21 @@ data:
         # Reload module configs as they change:
         reload.enabled: false
 
-    processors:
-      - add_cloud_metadata:
+    #processors:
+    #  - add_cloud_metadata:
 
-    cloud.id: ${ELASTIC_CLOUD_ID}
-    cloud.auth: ${ELASTIC_CLOUD_AUTH}
+    #cloud.id: ${ELASTIC_CLOUD_ID}
+    #cloud.auth: ${ELASTIC_CLOUD_AUTH}
 
+{{- if .Values.logstash.enabled }}
+    output.logstash:
+      hosts: ['${LOGSTASH_HOST:logstash}:${LOGSTASH_PORT:5044}']
+{{- else }}
     output.elasticsearch:
       hosts: ['${ELASTICSEARCH_HOST:elasticsearch}:${ELASTICSEARCH_PORT:9200}']
-#      username: ${ELASTICSEARCH_USERNAME}
-#      password: ${ELASTICSEARCH_PASSWORD
+      #username: ${ELASTICSEARCH_USERNAME}
+      #password: ${ELASTICSEARCH_PASSWORD
+{{- end }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -41,6 +49,7 @@ data:
     - type: docker
       containers.ids:
       - "*"
+      # See: https://www.elastic.co/guide/en/beats/filebeat/6.2/add-kubernetes-metadata.html
       processors:
         - add_kubernetes_metadata:
             in_cluster: true

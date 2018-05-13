@@ -21,6 +21,12 @@ spec:
           "-e",
         ]
         env:
+{{- if .Values.logstash.enabled }}
+        - name: LOGSTASH_HOST
+          value: {{ .Values.logstash.service.name }}
+        - name: LOGSTASH_PORT
+          value: "{{ .Values.logstash.service.externalPort }}"
+{{- else }}
         - name: ELASTICSEARCH_HOST
           value: {{ .Values.es.service.coordinator.name }}
         - name: ELASTICSEARCH_PORT
@@ -33,9 +39,16 @@ spec:
           value:
         - name: ELASTIC_CLOUD_AUTH
           value:
+{{- end }}
+        # filebeat has to run as root to read logs, since the logs
+        # on the host system are all owned by root. This is a little
+        # scary, but at least all the host mounts are read-only, to minimize
+        # possible damage.
         securityContext:
           runAsUser: 0
         volumeMounts:
+        - name: tz-conf
+          mountPath: /etc/localtime
         - name: config
           mountPath: /etc/filebeat.yml
           readOnly: true
@@ -43,12 +56,17 @@ spec:
         - name: prospectors
           mountPath: /usr/share/filebeat/prospectors.d
           readOnly: true
+        # Filebeat uses a registry file to keep track of the locations of the logs in the files that have already been sent between restarts of filebeat
+        # See: https://www.elastic.co/guide/en/beats/filebeat/current/configuration-general-options.html
         - name: data
           mountPath: /usr/share/filebeat/data
         - name: varlibdockercontainers
           mountPath: /var/lib/docker/containers
           readOnly: true
       volumes:
+      - name: tz-conf
+        hostPath:
+          path: /etc/localtime
       - name: config
         configMap:
           defaultMode: 0600

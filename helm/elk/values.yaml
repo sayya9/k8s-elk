@@ -57,4 +57,15 @@ filebeat:
   image:
     repository: docker.elastic.co/beats/filebeat
     tag: 6.2.4
+logstash:
+  enabled: false
+  replicaCount: 1
+  image:
+    repository: elastic/logstash
+    tag: 6.2.4
+  service:
+    name: logstash
+    type: ClusterIP
+    externalPort: 5044
+    internalPort: 5044
 selectPort: true
