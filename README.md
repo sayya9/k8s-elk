@@ -416,8 +416,16 @@ kubectl logs -f elk-elk-kibana-bfccb4fdd-9jfnw
 * 192.168.2.3 是 k8s node ip
 * 30061是kibana的nodeport
 
-由於現在kibana預設在k8s cm的設置已經跟es連上了，所以要configure index pattern
+由於現在kibana預設在k8s cm的設置已經跟es連上了，所以要configure index pattern：
 
-點擊左側的Management -> Kibana Index Patterns
+```
+點擊左側的Management -> Kibana Index Patterns -> Step 1 of 2: Define index pattern(鍵入logstash-*) -> Next step
+```
 
+```
+ Step 2 of 2: Configure settings -> 選@timestamp -> Create index pattern
+```
 
+如果index pattern加入成功的話，會如下圖：
+
+![kibana1](pictures/kibana1.png)
