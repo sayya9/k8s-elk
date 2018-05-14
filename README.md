@@ -366,3 +366,58 @@ GET http://localhost:9200/logstash-2018.05.10/doc/66uyWmMBCbP7RxBVdGIc?pretty
 ```
 
 [add_kubernetes_metadata processor](https://www.elastic.co/guide/en/beats/filebeat/6.2/add-kubernetes-metadata.html)很聰明的把Pod Name、Namespace、labels劃分好欄位。
+
+## Kibana
+
+將filebeat/logstash過濾完或是正則表達式處理完的資料，以視覺化的方式呈現給使用者。
+
+### 測試
+
+查看ELK相關pod：
+
+```
+kubectl get po -l release=elk
+```
+
+返回：
+
+```
+NAME                                     READY     STATUS    RESTARTS   AGE
+elk-elk-es-coordinator-76cbb74fd-f6jq2   1/1       Running   0          5m
+elk-elk-es-coordinator-76cbb74fd-xrlx9   1/1       Running   0          5m
+elk-elk-es-data-0                        1/1       Running   0          5m
+elk-elk-es-data-1                        1/1       Running   0          4m
+elk-elk-es-master-687d5bd4b4-4c2d6       1/1       Running   0          5m
+elk-elk-es-master-687d5bd4b4-p96g6       1/1       Running   0          5m
+elk-elk-es-master-687d5bd4b4-pv7k9       1/1       Running   0          5m
+elk-elk-filebeat-44mqw                   1/1       Running   0          5m
+elk-elk-filebeat-tj2g8                   1/1       Running   0          5m
+elk-elk-filebeat-zjvk5                   1/1       Running   0          5m
+elk-elk-kibana-bfccb4fdd-9jfnw           1/1       Running   0          5m
+elk-elk-logstash-78fd8d78f6-sgfh5        1/1       Running   0          5m
+```
+
+查看kibana pod log：
+
+```
+kubectl logs -f elk-elk-kibana-bfccb4fdd-9jfnw
+```
+
+返回：
+
+```
+{"type":"log","@timestamp":"2018-05-14T07:31:27Z","tags":["info","optimize"],"pid":1,"message":"Optimizing and caching bundles for stateSessionStorageRedirect, status_page, timelion, dashboardViewer, apm and kibana. This may take a few minutes"}
+```
+
+第一次kibana需要做優化跟cache的處理，所以時間會比較久。
+
+使用瀏覽器，敲入：http://192.168.2.3:30061，打開kibana。
+
+* 192.168.2.3 是 k8s node ip
+* 30061是kibana的nodeport
+
+由於現在kibana預設在k8s cm的設置已經跟es連上了，所以要configure index pattern
+
+點擊左側的Management -> Kibana Index Patterns
+
+
