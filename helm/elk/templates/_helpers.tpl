@@ -25,6 +25,11 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 {{- printf "%s-%s-logstash" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
+{{- define "kibana.fullname" -}}
+{{- $name := default .Chart.Name .Values.nameOverride -}}
+{{- printf "%s-%s-kibana" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
 {{/*
 Create a default fully qualified es master name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
@@ -85,6 +90,12 @@ component: shipper
 
 {{- define "labels.logstash" -}}
 release: {{ .Release.Name }}
-app: {{ template "filebeat.fullname" . }}
+app: {{ template "logstash.fullname" . }}
 component: indexer
+{{- end -}}
+
+{{- define "labels.kibana" -}}
+release: {{ .Release.Name }}
+app: {{ template "kibana.fullname" . }}
+component: web
 {{- end -}}

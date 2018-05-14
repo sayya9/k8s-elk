@@ -68,4 +68,15 @@ logstash:
     type: ClusterIP
     externalPort: 5044
     internalPort: 5044
+kibana:
+  replicaCount: 1
+  image:
+    repository: elastic/kibana
+    tag: 6.2.4
+  service:
+    name: kibana
+    type: NodePort
+    externalPort: 5601
+    internalPort: 5601
+    nodePort: 30061
 selectPort: true

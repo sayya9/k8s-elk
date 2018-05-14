@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: {{ .Release.Namespace }}
+  name: {{ template "kibana.fullname" . }}
+  labels:
+{{ include "labels" . | indent 4 }}
+data:
+  kibana.yml: |-
+    # https://www.elastic.co/guide/en/kibana/6.2/_configuring_kibana_on_docker.html
+    # Default Kibana configuration from kibana-docker.
+    # from https://github.com/elastic/kibana-docker/blob/master/build/kibana/config/kibana-oss.yml
+    server.name: kibana
+    server.host: "0"
+    elasticsearch.url: http://es-coordinator:9200
+
+    # Disable X-Pack
+    # See: https://www.elastic.co/guide/en/x-pack/current/xpack-settings.html
+    #      https://www.elastic.co/guide/en/x-pack/current/installing-xpack.html#xpack-enabling
+    xpack.security.enabled: false
+    xpack.monitoring.enabled: false
+    xpack.ml.enabled: false
+    xpack.graph.enabled: false
+    xpack.reporting.enabled: false
