@@ -12,7 +12,7 @@ data:
     # from https://github.com/elastic/kibana-docker/blob/master/build/kibana/config/kibana-oss.yml
     server.name: kibana
     server.host: "0"
-    elasticsearch.url: http://es-coordinator:9200
+    elasticsearch.url: http://{{ .Values.es.service.coordinator.name }}:{{ .Values.es.service.coordinator.externalApiPort }}
 
     # Disable X-Pack
     # See: https://www.elastic.co/guide/en/x-pack/current/xpack-settings.html

@@ -6,6 +6,32 @@ ELK是Elasticsearch、Logstash與Kibana的簡稱，三者皆為open-source工具
 * Logstash - 對日誌進行管理、收集、過濾與儲存，Logstash目前是es家族成員之一。
 * Kibana - 負責日誌的視覺化。
 
+此repository為記錄k8s上，所有pod的日誌。
+
+## 安裝
+
+下載k8s-elk repository
+
+```
+git clone https://github.com/sayya9/k8s-elk.git
+cd k8s-elk/helm/elk
+```
+
+該repository提供兩種架構：
+
+* filebeat -> es -> kibana
+
+```
+helm install -n elk .
+```
+
+* filebeat -> logstash -> es -> kibana
+
+```
+helm install -n elk --set=logstash.enabled=true .
+```
+
+
 ## Elasticsearch
 
 ELK所使用的資料庫，把收集到的日誌存在這裡，便於快速的查詢。
@@ -102,7 +128,7 @@ discovery.zen.ping.unicast.hosts: ["es-discovery"]
 透過es提供的API確認基本訊息：
 
 ```
-GET /
+GET http://localhost:9200
 ```
 
 返回：
@@ -128,7 +154,7 @@ GET /
 集群健康值：
 
 ```
-GET _cluster/health?pretty
+GET http://localhost:9200/_cluster/health?pretty
 ```
 
 返回：
@@ -156,7 +182,7 @@ GET _cluster/health?pretty
 各個node訊息：
 
 ```
-GET _cat/nodes?v
+GET http://localhost:9200/_cat/nodes?v
 ```
 
 返回：
@@ -211,14 +237,15 @@ ELK所使用的日誌分析工具，可同時從多個來源接收數據，主�
 
 ### Shipper
 
-負責監控本機日誌的變化，收集日誌最新的內容，只做讀取或是轉發的動作。Shipper不一定是圖上的logstash，也可以是es公司的Beats platform。
+負責監控本機日誌的變化，收集日誌最新的內容，只做讀取或是轉發的動作。Shipper不一定是圖上的logstash，也可以是es公司的Beats platform(Golang寫的)。
 
 Beats主要有下面這幾項：
 
 * Packetbeat - 抓取網路流量，識別其中的通訊協定，支援這幾個協定：HTTP、MySQL、PostgreSQL、Redis、Thrift、DNS、MongoDB、Memcache。
 * Filebeat - 對文件日誌的監控採集，如果公司環境數據量小且不需要對日誌欄位特別處理的話，可以用它，因為它比logstash輕量許多。
-* Winlogbeat - Windows作業系統的日誌監控採集
-* Topbeat - 收集系統基本訊息，例如：負載、CPU、Memory、Process
+* Winlogbeat - Windows作業系統的日誌監控採集。
+* Topbeat - 收集系統基本訊息，例如：負載、CPU、Memory、Process等。
+* Metricbeat - 專門用來採集伺服器或應用服務性能指標的收集程式，支援：Apache、HAProxy、MongoDB、MySQL、Nginx、PostgreSQL、Redis、Zookeeper等。
 
 ### Broker
 
@@ -246,3 +273,96 @@ Beats主要有下面這幾項：
 資料量大，且不允許丟失，可靠性要求較高：
 
 * filebeat/logstash -> redis/kafka -> logstash -> es -> kibana
+
+### 測試
+
+filebeat或是logstash從各個節點抓到的pod log，寫入es之後，每個index套用filebeat/logstash設計的 template：
+
+```
+GET http://localhost:9200/_cat/indices?v
+```
+
+返回：
+
+```
+health status index               uuid                   pri rep docs.count docs.deleted store.size pri.store.size
+green  open   logstash-2018.05.04 QvhLRLYCTyu-8cNypV_kAA   5   1        240            0      933kb        486.2kb
+green  open   logstash-2018.04.27 u6IHvKs6Q-ui2zBC0TxVxA   5   1       1927            0      1.4mb        733.4kb
+green  open   logstash-2018.04.18 IVzWO2I_Sei1zE1mE8gcbg   5   1      26030            0      8.9mb          4.5mb
+green  open   logstash-2018.05.10 HlvhR9zTQgqxmF_VPPPIEg   5   1       3112            0      2.4mb          1.1mb
+green  open   logstash-2018.05.05 7w411PdsRUmHrZ-iDhrrXQ   5   1        289            0      1.2mb        744.3kb
+green  open   logstash-2018.05.01 NhfG7XjKT56j9HpaBgG2Mw   5   1        263            0      1.2mb        790.9kb
+green  open   logstash-2018.05.09 _ORSbYrIR0-Yfguo5NAP_Q   5   1         59            0    607.9kb        463.1kb
+green  open   logstash-2018.04.28 FQLHgXlmQ0uFC9gBE25B2w   5   1       1727            0      1.6mb        935.1kb
+green  open   logstash-2018.05.02 A1WenXkjQYurYvXSDy_A_Q   5   1        239            0    601.5kb        310.3kb
+green  open   logstash-2018.04.23 HYRyOXq8S8Kj85TzL_aDdw   5   1         96            0    400.8kb          285kb
+green  open   logstash-2018.05.12 fZ2fJ_o1SL20iA9PytWenA   5   1       8306            0      4.2mb            2mb
+green  open   logstash-2018.04.20 bfvH1LNaRsaMoeGNEo1diA   5   1       1411            0   1015.1kb        522.5kb
+green  open   logstash-2018.05.03 QiNJu4Q7R0ev-UxmRG8tdA   5   1        237            0    759.6kb        414.8kb
+green  open   logstash-2018.05.07 cxCMuhS9TN2-ICQl-1Kq2Q   5   1       8268            0      6.4mb          3.1mb
+green  open   logstash-2018.05.13 lJIIF-ClQAORJboE9LKyyw   5   1      25035            0     18.8mb          9.3mb
+green  open   logstash-2018.04.21 jW41lL_KTFC6n0KbyIluLg   5   1         46            0    385.4kb        193.3kb
+green  open   logstash-2018.05.08 qPB-IGs3S-GC7h8569zBtA   5   1       1009            0      2.1mb          991kb
+green  open   logstash-2018.05.11 bXk4VoLCSNGjGWAlnt6qGQ   5   1      30857            0     19.9mb         10.7mb
+green  open   logstash-2018.05.06 Wk3xTBkjTT2anmfJo0vdVw   5   1        238            0      1.2mb        758.9kb
+green  open   logstash-2018.04.29 jXfX11jOSoGuvZomolbryQ   5   1         25            0    155.5kb         96.9kb
+green  open   logstash-2018.04.30 H0Aw-50DS5CHikd4Nu7HLg   5   1      15454            0     10.1mb          5.5mb
+```
+
+查看其中一筆document：
+
+```
+GET http://localhost:9200/logstash-2018.05.10/doc/66uyWmMBCbP7RxBVdGIc?pretty
+```
+
+返回：
+
+```
+{
+  "_index" : "logstash-2018.05.10",
+  "_type" : "doc",
+  "_id" : "66uyWmMBCbP7RxBVdGIc",
+  "_version" : 1,
+  "found" : true,
+  "_source" : {
+    "host" : "elk-elk-filebeat-hsxh5",
+    "@timestamp" : "2018-05-10T18:57:13.427Z",
+    "@version" : "1",
+    "beat" : {
+      "version" : "6.2.4",
+      "hostname" : "elk-elk-filebeat-hsxh5",
+      "name" : "elk-elk-filebeat-hsxh5"
+    },
+    "tags" : [
+      "beats_input_codec_plain_applied"
+    ],
+    "offset" : 4022,
+    "stream" : "stdout",
+    "message" : "2018-05-11T02:57:13.426+0800 I NETWORK  [conn225235] received client metadata from 127.0.0.1:46116 conn225235: { application: { name: \"MongoDB Shell\" }, driver: { name: \"MongoDB Internal Client\", version: \"3.4.10\" }, os: { type: \"Linux\", name: \"PRETTY_NAME=\"Debian GNU/Linux 8 (jessie)\"\", architecture: \"x86_64\", version: \"Kernel 4.16.0-1.el7.elrepo.x86_64\" } }",
+    "kubernetes" : {
+      "node" : {
+        "name" : "tp-master01"
+      },
+      "namespace" : "lab01",
+      "labels" : {
+        "app" : "mongodb-mongodb-lab01",
+        "component" : "db",
+        "pod-template-hash" : "3730037732",
+        "release" : "mongodb-lab01"
+      },
+      "pod" : {
+        "name" : "mongodb-mongodb-lab01-7c7447cc76-s9cx4"
+      },
+      "container" : {
+        "name" : "mongodb"
+      }
+    },
+    "prospector" : {
+      "type" : "docker"
+    },
+    "source" : "/var/lib/docker/containers/63808bfa68a3ef3f08c0ba033bfc366d247149cdb68014372d364770be4c8752/63808bfa68a3ef3f08c0ba033bfc366d247149cdb68014372d364770be4c8752-json.log"
+  }
+}
+```
+
+[add_kubernetes_metadata processor](https://www.elastic.co/guide/en/beats/filebeat/6.2/add-kubernetes-metadata.html)很聰明的把Pod Name、Namespace、labels劃分好欄位。
